@@ -5,6 +5,8 @@
 
 using namespace std;
 #define LIMITE_CREDITOS 32
+#define MIN_PERIODOS 4
+#define CRED_ESTAGIO 5
 
 struct Data{
     /*
@@ -94,6 +96,98 @@ int solveCoin(Data *data){
         }
     UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
     }
+
+    //QUINTA RESTRIÇÃO - PRE-REQUISITOS
+    for (int i = 0; i <= data->disciplinasFaltantes; i++){
+        for (int k = 0; k < data->preRequisito; k++){
+ 		s.clear();
+        	s << "PreReq_";
+        	s >> consName;
+            for(int j = 0; j <= data->numPeriodosFaltantes; j++){
+                s.clear();
+                s << "X(" << i << "," << j << ")";
+   	            s >> varName;
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+    
+                s.clear();
+                s << "X(" << k << "," << j << ")";
+   	            s >> varName;
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), -1);
+            }
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Greater);
+    }
+    //SEXTA RESTRIÇÃO - N POSSUÍMOS INFORMAÇÕES SOBRE CHOQUE DE HORÁRIO
+   /* for(int j = 0; j <= data->numPeriodosFaltantes; i++){
+        s.clear();
+        s << "Choq_Horario_";
+        s >> consName;
+        for(int i = 0; i <= data->disciplinasFaltantes; i++){
+            for(int k = 0; k <= choq_horario; i++){
+                s.clear();
+                s << "X(" << k << "," << j << ")";
+   	            s >> varName;
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+
+                s.clear();
+                s << "X(" << i << "," << j << ")";
+                s >> varName;
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+            }
+        }
+         UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
+    }
+    */
+    //SÉTIMA RESTRIÇÃO - PERÍODOS NECESSÁRIOS PARA TÉRMINO DO CURSO-N CONSIDERA CONJUNTO ME
+    for(int i; i < data->disciplinasFaltantes; i++){ // Entender contra barra e adicionar conjunto do estagio e monografia
+        s.clear();
+        s << "Periodos_Neces_";
+        s >> consName;
+        for(int j = 0; j <= data->numPeriodosFaltantes; j++){
+             s.clear();
+             s << "X(" << i << "," << j << ")";
+   	         s >> varName;
+             UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->numPeriodosFaltantes);
+    
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater);
+    }
+
+    //OITAVA RESTRIÇÃO - FORÇA ESTAGIO E MONOGRAFIA PARA O ULTIMO PERÍODO
+    /*for (int i = 0; i < conj_estagio_monografia; i++){
+        s.clear();
+        s << "Estagio_Monografia_";
+        s >> consName;
+        for (int j = 0; j < data -> numPeriodosFaltantes; j++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->numPeriodosFaltantes);
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater);
+    }*/
+
+    //NONA RESTRIÇÃO
+    for (int i = 0; i < data->disciplinasFaltantes; i++){
+        s.clear();
+        s << "Paga_Disciplina_";
+        s >> consName;
+        for (int j = 0; j < data->numPeriodosFaltantes; j++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Binary);
+    }
+    //DÉCIMA RESTRIÇÃO
+    s.clear();
+    s << "Y";
+   	s >> varName;
+    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+    UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater); // Min_Periodos é o proprio y?
 
     // Escreve modelo no arquivo .lp
     UFFLP_WriteLP( prob, "PAAA.lp" );
