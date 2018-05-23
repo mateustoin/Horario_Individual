@@ -44,7 +44,7 @@ int solveCoin(Data *data){
         s << "LimCreditos_" << j;
         s >> consName;
 
-        for (int i = 0; i < data->numPeriodosFaltantes; i++){
+        for (int i = 0; i < data->disciplinasFaltantes i++){
             s.clear();
             s << "X(" << i << "," << j << ")";
    	        s >> varName;
@@ -55,7 +55,7 @@ int solveCoin(Data *data){
     }
 
     //SEGUNDA RESTRIÇÃO
-    for (int i = 0; i <= data->disciplinasFaltantes; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
+    for (int i = 0; i < data->disciplinasFaltantes; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
     s.clear();
     s << "Obrigatorias_" << i;
     s >> consName;
@@ -65,7 +65,7 @@ int solveCoin(Data *data){
    	        s >> varName;
    	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
         }
-    UFFLP_AddConstraint( prob, (char*)consName.c_str(), LIMITE_CREDITOS, UFFLP_Equal);
+    UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Equal);
     }
 
     //TERCEIRA RESTRIÇÃO DO MODELO - obriga mínimo de créditos de optativas
@@ -73,7 +73,6 @@ int solveCoin(Data *data){
     s << "MinOptativas_";
     s >> consName;
     for (int i = 0; i < data->numDisciplinasOp; i++){
-
         for (int j = 0; j < data->numPeriodosFaltantes; j++){
             s.clear();
             s << "X(" << i << "," << j << ")";
@@ -98,21 +97,22 @@ int solveCoin(Data *data){
     }
 
     //QUINTA RESTRIÇÃO - PRE-REQUISITOS
-    for (int i = 0; i <= data->disciplinasFaltantes; i++){
+    for (int i = 0; i < data->disciplinasFaltantes; i++){
         for (int k = 0; k < data->preRequisito; k++){
- 		s.clear();
+ 		    s.clear();
         	s << "PreReq_";
         	s >> consName;
-            for(int j = 0; j <= data->numPeriodosFaltantes; j++){
+
+            for(int j = 0; j < data->numPeriodosFaltantes; j++){
                 s.clear();
                 s << "X(" << i << "," << j << ")";
    	            s >> varName;
-                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->numPeriodosFaltantes);
     
                 s.clear();
                 s << "X(" << k << "," << j << ")";
    	            s >> varName;
-                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), -1);
+                UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), -data->numPeriodosFaltantes);
             }
         }
         UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Greater);
