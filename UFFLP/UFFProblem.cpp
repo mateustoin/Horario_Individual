@@ -8,13 +8,22 @@
 *
 *****************************************************************************/
 
+#include "/home/mateus/Cbc-2.4.0/include/coin/OsiCbcSolverInterface.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/OsiClpSolverInterface.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CglPreProcess.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/OsiAuxInfo.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CbcStrategy.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CbcFeasibilityBase.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CbcCutGenerator.hpp"
+
+/*
 #include <OsiCbcSolverInterface.hpp>
-#include <OsiClpSolverInterface.hpp>
 #include <CglPreProcess.hpp>
 #include <OsiAuxInfo.hpp>
 #include <CbcStrategy.hpp>
 #include <CbcFeasibilityBase.hpp>
 #include <CbcCutGenerator.hpp>
+*/
 
 #include "UFFProblem.h"
 
@@ -23,7 +32,7 @@
 #define UFFLP_VERSION   "2.0 over Coin-Cbc 2.4"
 
 //====================== CUT GENERATION ==========================
-/*
+
 void UFFCutGenerator::generateCuts( const OsiSolverInterface & si,
       OsiCuts & cs, const CglTreeInfo info ) const
 {
@@ -55,7 +64,7 @@ CglCutGenerator* UFFCutGenerator::clone() const
 {
    return new UFFCutGenerator(*this);
 }
-*/
+
 //====================== HEURISTIC ==========================
 
 UFFPrimalHeuristic::UFFPrimalHeuristic( CbcModel & model )
@@ -201,7 +210,7 @@ UFFProblem::UFFProblem()
    logLevel = 0;
 
    // reset the callback pointers and contexts
-   //userCutGen.userCutFunc = NULL;
+   userCutGen.userCutFunc = NULL;
    generatingCuts = false;
    userHeur = new UFFPrimalHeuristic( *model );
    inHeuristic = false;
@@ -615,10 +624,10 @@ UFFLP_StatusType UFFProblem::solve(UFFLP_ObjSense sense)
          // Set the cut generator (set the "normal" flag true, both the "atSolution"
          // and the "infeasible" flags false, the "howOftenInSub" parameter -100,
          // the "whatDepth" parameter 1, and the "whatDepthInSub" parameters -1
-         //userCutGen.problem = this;
-         //userCutGen.logFile = f;
-         //model->addCutGenerator( &userCutGen, 1, "UFFLP_User", true, false, false,
-         //      -100, 1, -1 );
+         userCutGen.problem = this;
+         userCutGen.logFile = f;
+         model->addCutGenerator( &userCutGen, 1, "UFFLP_User", true, false, false,
+               -100, 1, -1 );
 
          // Set the primal heuristic
          userHeur->problem = this;
@@ -658,10 +667,10 @@ UFFLP_StatusType UFFProblem::solve(UFFLP_ObjSense sense)
          int ns = 5;
          if (model->getNumCols()<5000) ns = 20;
          CbcStrategyDefault strategy(0,ns,5,logLevel);
-         //if ((userHeur->userHeurFunc != NULL) || (userCutGen.userCutFunc != NULL)
-         //      || feasibilityCheck)
-         //   strategy.setupPreProcessing(0,0);
-         //else
+         if ((userHeur->userHeurFunc != NULL) || (userCutGen.userCutFunc != NULL)
+               || feasibilityCheck)
+            strategy.setupPreProcessing(0,0);
+         else
             strategy.setupPreProcessing();
          model->setStrategy(strategy);
          model->messageHandler()->setLogLevel(1, 0);
@@ -729,6 +738,7 @@ UFFLP_StatusType UFFProblem::solve(UFFLP_ObjSense sense)
          return UFFLP_Infeasible;
       }
    }
+
    // Assume unfinished
    return UFFLP_Aborted;
 }
@@ -831,7 +841,7 @@ UFFLP_ErrorType UFFProblem::setLogInfo(char* fname, int level)
 UFFLP_ErrorType UFFProblem::setCutCallBack(UFFLP_CallBackFunction cutFunc)
 {
    // set the callback function
-   //userCutGen.userCutFunc = cutFunc;
+   userCutGen.userCutFunc = cutFunc;
 
    return UFFLP_Ok;
 }
@@ -842,7 +852,6 @@ UFFLP_ErrorType UFFProblem::printToLog(char* message)
    if ( !generatingCuts && !inHeuristic ) return UFFLP_NotInCallback;
 
    // print the message to the log file
-/*
    if (generatingCuts)
    {
       if (userCutGen.logFile == NULL)
@@ -852,12 +861,11 @@ UFFLP_ErrorType UFFProblem::printToLog(char* message)
    }
    else
    {
-*/
       if (userHeur->logFile == NULL)
          printf( "UFFLP: %s\n", message );
       else
          fprintf( userHeur->logFile, "UFFLP: %s\n", message );
-   //}
+   }
 
    return UFFLP_Ok;
 }

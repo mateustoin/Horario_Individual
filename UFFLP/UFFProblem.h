@@ -18,10 +18,15 @@
 
 #include "UFFLP.h"
 
+#include "/home/mateus/Cbc-2.4.0/include/coin/CoinMessageHandler.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CglCutGenerator.hpp"
+#include "/home/mateus/Cbc-2.4.0/include/coin/CbcHeuristic.hpp"
+
+/*
 #include <CoinMessageHandler.hpp>
 #include <CglCutGenerator.hpp>
 #include <CbcHeuristic.hpp>
-
+*/
 class OsiSolverInterface;
 class CbcModel;
 class UFFProblem;
@@ -32,7 +37,7 @@ struct Constraint
    std::vector<double> coeffs;   // constraint coefficients
    bool added;      // true when the constraint has already been added
 };
-/*
+
 class UFFCutGenerator : public CglCutGenerator
 {
 public:
@@ -53,7 +58,7 @@ private:
    // Current log file
    FILE* logFile;
 };
-*/
+
 class UFFPrimalHeuristic : public CbcHeuristic
 {
 public:
@@ -251,7 +256,7 @@ private:
    std::map<std::string,Constraint> varCoeffMap;
 
    // UFFLP cut generation object
-   //UFFCutGenerator userCutGen;
+   UFFCutGenerator userCutGen;
 
    // Flag that indicates that the current context is the cut generation
    bool generatingCuts;
