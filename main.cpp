@@ -4,7 +4,7 @@
 #include "UFFLP/UFFLP.h"
 
 using namespace std;
-#define LIMITE_CREDITOS 32
+#define LIMITE_CREDITOS 5
 #define MIN_PERIODOS 4
 #define CRED_ESTAGIO 5
 
@@ -159,16 +159,18 @@ int solveCoin(Data *data){int identificador[12] = {0};
 
     //SEGUNDA RESTRIÇÃO
     for (int i = 0; i < data->disciplinas; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
-    s.clear();
-    s << "Obrigatorias_" << i;
-    s >> consName;
-        for(int j = 0; j < data->numPeriodosFaltantes; j++){
-            s.clear();
-            s << "X(" << i << "," << j << ")";
-   	        s >> varName;
-   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
-        }
-    UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Equal);
+		if (!situacao[i]){
+			s.clear();
+			s << "Obrigatorias_" << i;
+			s >> consName;
+				for(int j = 0; j < data->numPeriodosFaltantes; j++){
+				    s.clear();
+				    s << "X(" << i << "," << j << ")";
+		   	        s >> varName;
+		   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+				}
+			UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Equal);
+		}
     }
 
     //TERCEIRA RESTRIÇÃO DO MODELO - obriga mínimo de créditos de optativas
@@ -187,16 +189,18 @@ int solveCoin(Data *data){int identificador[12] = {0};
 
     //QUARTA RESTRIÇÃO- PAGA OP APENAS UMA VEZ POR PERÍODO
     for (int i = 0; i < data->numDisciplinasOp; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
-    s.clear();
-    s << "OpUmaVez_" << i;
-    s >> consName;
-        for(int j = 0; j < data->numPeriodosFaltantes; j++){
-            s.clear();
-            s << "X(" << i << "," << j << ")";
-   	        s >> varName;
-   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
-        }
-    UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
+		if(!situacao[i]){
+			s.clear();
+			s << "OpUmaVez_" << i;
+			s >> consName;
+				for(int j = 0; j < data->numPeriodosFaltantes; j++){
+				    s.clear();
+				    s << "X(" << i << "," << j << ")";
+		   	        s >> varName;
+		   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+				}
+			UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
+		}
     }
 
     //QUINTA RESTRIÇÃO - PRE-REQUISITOS
@@ -349,6 +353,8 @@ int solveCoin(Data *data){int identificador[12] = {0};
                     }
             }*/
     }
+    else
+        cout << "Não foi encontrada uma solução ótima..." << endl;
 
 
     // Destroy the problem instance
