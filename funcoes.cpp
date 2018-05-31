@@ -27,7 +27,8 @@ void atualizaDados(Data* data){
     for (int i = 0; i < 12; i++){
         for (int j = 0; j < 12; j++){
             if (horario[i] == horario[j])
-                choqueHorario[i][j] = true;
+                choqueHorario[i][j] =
+                 true;
             else
                 choqueHorario[i][j] = false;
         }
@@ -482,7 +483,7 @@ void solveCoin_Y(Data* data){
     
     //SÉTIMA RESTRIÇÃO - PERÍODOS NECESSÁRIOS PARA TÉRMINO DO CURSO-N CONSIDERA CONJUNTO ME
     for(int i = 0; i < data->disciplinas; i++){ // Entender contra barra e adicionar conjunto do estagio e monografia
-        for(int j = 0; j <= data->numPeriodosFaltantes; j++){
+        for(int j = 0; j < data->numPeriodosFaltantes; j++){
             s.clear();
             s << "Periodos_Neces_" << i << "_" << j;
             s >> consName;
@@ -491,8 +492,13 @@ void solveCoin_Y(Data* data){
             s << "X(" << i << "," << j << ")";
    	        s >> varName;
             UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), j);
+
+            s.clear();
+            s << "Y";
+   	        s >> varName;
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), -1);
          
-            UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater);
+            UFFLP_AddConstraint( prob, (char*)consName.c_str(), 0, UFFLP_Less);
         }
     }
     
