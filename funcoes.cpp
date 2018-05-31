@@ -340,3 +340,251 @@ void solveCoin(Data* data){
     // Destroy the problem instance
     UFFLP_DestroyProblem( prob );
 }
+
+void solveCoin_Y(Data* data){
+    // Cria problema
+    UFFProblem* prob = UFFLP_CreateProblem();
+
+    // Cria variaveis X
+	string varName, consName;
+  	stringstream s;
+
+    // Definindo FUNC Obj. Y
+    s.clear();
+    s << "Y";
+    s >> varName;
+    UFFLP_AddVariable(prob, (char*)varName.c_str(), 1.0, 10.0, 1, UFFLP_Integer);
+
+    // Definindo FUNC Obj. Xij
+    for (int i = 0; i < data->disciplinas; i++) {
+		for (int j = 0; j < data->numPeriodosFaltantes; j++) {
+                s.clear();
+				s << "X(" << i << "," << j << ")";
+				s >> varName;
+		        UFFLP_AddVariable(prob, (char*)varName.c_str(), 0.0, 1.0, 0, UFFLP_Binary);
+		}
+	}
+
+
+    //PRIMEIRA RESTRIÇÃO DO MODELO - LIMITE DE CRÉDITOS POR PERÍODO
+    for (int j = 0; j < data->numPeriodosFaltantes; j++){
+        s.clear();
+        s << "LimCreditos_" << j;
+        s >> consName;
+
+        for (int i = 0; i < data->disciplinas; i++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->creditos[i]);
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), LIMITE_CREDITOS, UFFLP_Less);
+    }
+
+    //SEGUNDA RESTRIÇÃO
+    for (int i = 0; i < data->disciplinas; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
+        if(!data->situacao[i]){
+            s.clear();
+            s << "Obrigatorias_" << i;
+            s >> consName;
+                for(int j = 0; j < data->numPeriodosFaltantes; j++){
+                    s.clear();
+                    s << "X(" << i << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+                }
+            UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Equal);
+        }
+    }
+
+    //TERCEIRA RESTRIÇÃO DO MODELO - obriga mínimo de créditos de optativas
+    s.clear();
+    s << "MinOptativas_";
+    s >> consName;
+    for (int i = 0; i < data->numDisciplinasOp; i++){
+        for (int j = 0; j < data->numPeriodosFaltantes; j++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+   	        UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->creditos[i]);
+        }
+    }
+    UFFLP_AddConstraint( prob, (char*)consName.c_str(), data->numDisciplinasOp, UFFLP_Greater);
+
+    //QUARTA RESTRIÇÃO- PAGA OP APENAS UMA VEZ POR PERÍODO
+    for (int i = 0; i < data->numDisciplinasOp; i++){ // Usando número de disciplinas faltantes pois é a mesma quantidade de disciplinas obrigatórias
+        if (!data->situacao[i]){
+            s.clear();
+            s << "OpUmaVez_" << i;
+            s >> consName;
+                for(int j = 0; j < data->numPeriodosFaltantes; j++){
+                    s.clear();
+                    s << "X(" << i << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+                }
+            UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
+        }
+    }
+
+    //QUINTA RESTRIÇÃO - PRE-REQUISITOS
+    for (int i = 0; i < data->disciplinas; i++){
+        for (int k = 0; k < data->disciplinas; k++){
+            if (data->preReqI[i][k]){
+                s.clear();
+                s << "PreReq_" << i << "_" << k;
+                s >> consName;
+
+                for(int j = 0; j < data->numPeriodosFaltantes; j++){
+                    s.clear();
+                    s << "X(" << i << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), j);
+        
+                    s.clear();
+                    s << "X(" << k << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), -j);
+                }
+
+                UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Greater);
+            }
+        }
+    }
+
+    
+    //SEXTA RESTRIÇÃO
+    for(int j = 0; j < data->numPeriodosFaltantes; j++){
+        for(int i = 0; i < data->disciplinas; i++){
+            for(int k = 0; k < data->disciplinas; k++){
+                
+                if ((data->choqueHorarioI[i][k] == true) && (i != k)){
+                    s.clear();
+                    s << "Choq_Horario_" << j << "_" << i << "_" << k;
+                    s >> consName;
+
+                    s.clear();
+                    s << "X(" << k << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+
+                    s.clear();
+                    s << "X(" << i << "," << j << ")";
+                    s >> varName;
+                    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+                    UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Less);
+                }
+                
+            }
+        }
+    }
+    
+    
+    //SÉTIMA RESTRIÇÃO - PERÍODOS NECESSÁRIOS PARA TÉRMINO DO CURSO-N CONSIDERA CONJUNTO ME
+    for(int i = 0; i < data->disciplinas; i++){ // Entender contra barra e adicionar conjunto do estagio e monografia
+        for(int j = 0; j <= data->numPeriodosFaltantes; j++){
+            s.clear();
+            s << "Periodos_Neces_" << i << "_" << j;
+            s >> consName;
+
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), j);
+         
+            UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater);
+        }
+    }
+    
+    //OITAVA RESTRIÇÃO - FORÇA ESTAGIO E MONOGRAFIA PARA O ULTIMO PERÍODO
+    /*for (int i = 0; i < conj_estagio_monografia; i++){
+        s.clear();
+        s << "Estagio_Monografia_";
+        s >> consName;
+        for (int j = 0; j < data -> numPeriodosFaltantes; j++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), data->numPeriodosFaltantes);
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), MIN_PERIODOS, UFFLP_Greater);
+    }*/
+
+    //NONA RESTRIÇÃO
+    /*for (int i = 0; i < data->disciplinas; i++){
+        s.clear();
+        s << "Paga_Disciplina_";
+        s >> consName;
+        for (int j = 0; j < data->numPeriodosFaltantes; j++){
+            s.clear();
+            s << "X(" << i << "," << j << ")";
+   	        s >> varName;
+
+            UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+        }
+        UFFLP_AddConstraint( prob, (char*)consName.c_str(), 1, UFFLP_Binary);
+    }*/
+
+
+    //DÉCIMA RESTRIÇÃO
+    s.clear();
+    s << "Y";
+   	s >> consName;
+    s.clear();
+    s << "Y";
+    s >> varName;
+
+    UFFLP_SetCoefficient( prob, (char*)consName.c_str(),(char*)varName.c_str(), 1);
+    UFFLP_AddConstraint( prob, (char*)consName.c_str(), 0, UFFLP_Greater);
+    
+    // Escreve modelo no arquivo .lp
+    UFFLP_WriteLP( prob, "PAAA.lp" );
+
+    UFFLP_StatusType status = UFFLP_Solve( prob, UFFLP_Minimize );
+    
+    if (status == UFFLP_Optimal){
+
+        double value;
+        cout << "Solucao otima encontrada!" << endl << endl;
+        cout << "Solucao:" << endl;
+
+        UFFLP_GetObjValue( prob, &value );
+        cout << "Valor da funcao objetivo = " << value << endl;
+
+
+        // Imprime valor das variaveis nao-nulas
+
+            for (int i = 0; i < data->disciplinas; i++) {
+                for (int j = 0; j < data->numPeriodosFaltantes; j++) {
+
+                s.clear();
+                s << "X(" << i << "," << j << ")";
+                s >> varName;
+                UFFLP_GetSolution( prob, (char*)varName.c_str(), &value );
+
+                if (value > 0.1) {
+                cout << varName << " = " << value << endl;
+                }
+            }
+        }
+        cout << endl;/*
+            for (int i = 0; i < data->numPrepostos; i++) {
+                for (int j = 0; j < data->numAudiencias; j++) {
+
+                s.clear();
+                s << "Y(" << i << "," << j << ")";
+                s >> varName;
+                UFFLP_GetSolution( prob, (char*)varName.c_str(), &value );
+
+                if (value > 0.1) {
+                cout << varName << " = " << value << endl;
+                    }
+            }*/
+    }else{
+        cout << "Não foi encontrada uma solução ótima, tente novamente mais tarde!" << endl;
+    }
+
+    // Destroy the problem instance
+    UFFLP_DestroyProblem( prob );
+}

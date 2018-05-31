@@ -7,7 +7,7 @@
 #include "UFFLP/UFFLP.h"
 
 #define LIMITE_CREDITOS 5
-#define MIN_PERIODOS 4
+#define MIN_PERIODOS 12
 #define CRED_ESTAGIO 5
 
 using namespace std;
@@ -29,5 +29,6 @@ struct Data{
 
 void atualizaDados(Data *data);
 void solveCoin(Data *data);
+void solveCoin_Y(Data *data);
 
 #endif
